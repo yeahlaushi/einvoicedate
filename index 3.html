@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>e-Invoice Implementation Date — Determination Tool</title>
+<meta name="description" content="Work out your Malaysian e-Invoice implementation date under LHDN e-Invoice Guideline v4.8.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16233D; --ink-2:#3D4A63; --ink-3:#6B7689;
+  --paper:#FFFFFF; --surface:#F3F6FA; --rule:#DBE2EC;
+  --brand:#1F4E79; --brand-soft:#E8EFF7;
+  --ok:#1B6B45; --ok-soft:#E7F3EC;
+  --warn:#8A5A00; --warn-soft:#FDF3DE;
+  --stop:#9E2020; --stop-soft:#FBECEC;
+  --shadow:0 1px 2px rgba(22,35,61,.06), 0 8px 24px -12px rgba(22,35,61,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Source Sans 3","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  background:var(--surface); color:var(--ink);
+  font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+a{color:var(--brand)}
+
+/* ---------- masthead ---------- */
+.masthead{background:var(--ink); color:#fff; padding:26px 24px 24px}
+.masthead .inner{max-width:1120px; margin:0 auto}
+.masthead .firm{margin:0 0 10px; font-size:17px; font-weight:600; color:#C3D1E6; letter-spacing:.01em}
+.masthead h1{margin:0; font-size:26px; font-weight:700; letter-spacing:-.01em; line-height:1.25}
+.masthead p{margin:6px 0 0; color:#B7C2D6; font-size:16px; max-width:62ch}
+.ver{display:inline-block; margin-top:12px; font-size:13px; font-weight:600; letter-spacing:.02em;
+  color:#CBD6E8; border:1px solid #3A4A6B; border-radius:999px; padding:3px 11px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px; margin:0 auto; padding:28px 24px 56px;
+  display:grid; grid-template-columns:minmax(0,1fr) 336px; gap:28px; align-items:start}
+@media (max-width:900px){ .wrap{grid-template-columns:1fr; padding:20px 16px 40px} }
+
+.card{background:var(--paper); border:1px solid var(--rule); border-radius:12px; box-shadow:var(--shadow)}
+.card .body{padding:26px 28px 28px}
+@media (max-width:900px){ .card .body{padding:20px} }
+
+.eyebrow{font-size:13.5px; font-weight:700; color:var(--brand); letter-spacing:.03em; margin:0 0 8px}
+.q{margin:0 0 4px; font-size:23px; font-weight:700; line-height:1.3; letter-spacing:-.01em}
+.qsub{margin:8px 0 0; color:var(--ink-2); font-size:16px}
+
+/* ---------- options ---------- */
+.opts{margin-top:22px; display:flex; flex-direction:column; gap:10px}
+.opt{
+  display:block; width:100%; text-align:left; cursor:pointer; font:inherit; color:inherit;
+  background:var(--paper); border:1.5px solid var(--rule); border-radius:9px;
+  padding:14px 16px; transition:border-color .12s, background .12s, transform .12s;
+}
+.opt:hover{border-color:var(--brand); background:var(--brand-soft)}
+.opt:active{transform:translateY(1px)}
+.opt:focus-visible{outline:3px solid #9CC0E4; outline-offset:2px}
+.opt b{display:block; font-weight:600; font-size:17px}
+.opt span{display:block; color:var(--ink-3); font-size:15px; margin-top:2px}
+
+/* ---------- yes/no grid for the exemption tests ---------- */
+.test{border:1px solid var(--rule); border-radius:9px; padding:15px 16px; margin-top:12px}
+.test.answered{border-color:#C3D3E6; background:#FBFCFE}
+.test .tq{display:flex; gap:11px}
+.test .tag{font-weight:700; color:var(--brand); flex:0 0 auto}
+.test .tx{font-size:16.5px}
+.yn{display:flex; gap:8px; margin-top:12px; padding-left:29px}
+.yn button{
+  font:inherit; font-weight:600; font-size:15px; cursor:pointer; color:var(--ink-2);
+  background:var(--paper); border:1.5px solid var(--rule); border-radius:7px; padding:6px 20px;
+}
+.yn button:hover{border-color:var(--brand); color:var(--brand)}
+.yn button:focus-visible{outline:3px solid #9CC0E4; outline-offset:2px}
+.yn button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:#fff}
+.footnote{margin-top:16px; color:var(--ink-3); font-size:14.5px}
+
+.cta{
+  margin-top:20px; font:inherit; font-weight:600; font-size:17px; cursor:pointer;
+  background:var(--brand); color:#fff; border:none; border-radius:8px; padding:12px 26px;
+}
+.cta[disabled]{background:#B9C4D4; cursor:not-allowed}
+.cta:focus-visible{outline:3px solid #9CC0E4; outline-offset:2px}
+
+/* ---------- result ---------- */
+.verdict{border-radius:10px; padding:22px 24px; border:1.5px solid}
+.verdict .lab{font-size:13.5px; font-weight:700; letter-spacing:.04em; margin:0 0 6px}
+.verdict .val{font-size:34px; font-weight:700; line-height:1.15; letter-spacing:-.015em; margin:0}
+.verdict .sub{margin:10px 0 0; font-size:16px}
+.v-date{background:var(--ok-soft); border-color:#A9CFBB} .v-date .lab,.v-date .val{color:var(--ok)}
+.v-exempt{background:var(--warn-soft); border-color:#E3C888} .v-exempt .lab,.v-exempt .val{color:var(--warn)}
+.v-stop{background:var(--stop-soft); border-color:#E5B4B4} .v-stop .lab,.v-stop .val{color:var(--stop)}
+.verdict .sub{color:var(--ink-2)}
+
+.because{margin-top:24px}
+.because h3{font-size:15px; font-weight:700; letter-spacing:.02em; color:var(--ink-2); margin:0 0 10px}
+.because ul{margin:0; padding-left:20px}
+.because li{margin-bottom:8px}
+.because li:last-child{margin-bottom:0}
+
+.actions{margin-top:26px; display:flex; gap:10px; flex-wrap:wrap}
+.btn-2{font:inherit; font-weight:600; font-size:16px; cursor:pointer; background:var(--paper);
+  color:var(--ink); border:1.5px solid var(--rule); border-radius:8px; padding:10px 20px}
+.btn-2:hover{border-color:var(--brand); color:var(--brand)}
+.btn-2:focus-visible{outline:3px solid #9CC0E4; outline-offset:2px}
+
+/* ---------- trail ---------- */
+.rail{position:sticky; top:24px}
+@media (max-width:900px){ .rail{position:static} }
+.rail h2{font-size:14px; font-weight:700; letter-spacing:.05em; color:var(--ink-3); margin:0 0 14px}
+.trail{list-style:none; margin:0; padding:0}
+.trail li{padding:0 0 14px 18px; border-left:2px solid var(--rule); position:relative}
+.trail li:last-child{padding-bottom:0; border-left-color:transparent}
+.trail li::before{content:""; position:absolute; left:-6px; top:6px; width:10px; height:10px;
+  border-radius:50%; background:var(--brand)}
+.trail .tl-q{font-size:14px; color:var(--ink-3); line-height:1.4}
+.trail .tl-a{font-size:16px; font-weight:600; margin-top:2px}
+.empty{color:var(--ink-3); font-size:15.5px; font-style:italic}
+
+.crit{margin-top:22px; border-top:1px solid var(--rule); padding-top:18px}
+.crit h3{font-size:14px; font-weight:700; letter-spacing:.04em; color:var(--ink-3); margin:0 0 10px}
+.crit p{margin:0 0 9px; font-size:14.5px; color:var(--ink-2); line-height:1.5}
+.crit p:last-child{margin-bottom:0}
+
+/* ---------- footer ---------- */
+.foot{border-top:1px solid var(--rule); background:var(--paper)}
+.foot .inner{max-width:1120px; margin:0 auto; padding:22px 24px 34px;
+  color:var(--ink-3); font-size:14.5px; line-height:1.6}
+.foot strong{color:var(--ink-2)}
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+
+@media print{
+  body{background:#fff; font-size:12pt}
+  .masthead{background:#fff; color:#000; border-bottom:2px solid #000; padding:0 0 12px}
+  .masthead p{color:#333} .ver{border-color:#999; color:#333}
+  .wrap{display:block; padding:16px 0; max-width:none}
+  .card{box-shadow:none; border:none} .card .body{padding:0}
+  .actions,.opts,.cta,.yn{display:none !important}
+  .rail{margin-top:24px; page-break-inside:avoid}
+  .foot .inner{padding:16px 0}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="firm">Wanconnect Consulting Group</p>
+    <h1>Determination of your e-Invoice implementation date</h1>
+    <p>Answer a few questions to work out when your business must start issuing e-Invoices under LHDN's phased rollout.</p>
+    <div class="ver">Based on e-Invoice Guideline Version 4.8 &middot; 30 August 2026 and FAQ &middot; 4 September 2026</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card"><div class="body" id="stage" aria-live="polite">
+    <noscript><p class="q">This tool needs JavaScript</p>
+    <p class="qsub">Enable JavaScript, or refer to the printed flowchart instead.</p></noscript>
+  </div></section>
+
+  <aside class="rail">
+    <h2>YOUR ANSWERS</h2>
+    <ul class="trail" id="trail"></ul>
+    <p class="empty" id="trailEmpty">Nothing recorded yet.</p>
+
+    <div class="crit">
+      <h3>MSME EXEMPTION &mdash; SECTION 1.6.10</h3>
+      <p>The exemption applies to taxpayers of every kind with annual turnover or revenue below RM3 million.</p>
+      <p>It does <strong>not</strong> apply where the taxpayer has a non-individual shareholder, a holding company, a related company or a joint venture with annual turnover or revenue of at least RM3 million.</p>
+      <p>&ldquo;Related company&rdquo; takes its meaning from section 2 of the Promotion of Investments Act 1986.</p>
+    </div>
+  </aside>
+</main>
+
+<footer class="foot">
+  <div class="inner">
+    <p><strong>This tool is general guidance, not tax advice.</strong> It follows the latest LHDN e-Invoice Guideline and the accompanying FAQ. LHDN revises the guideline frequently &mdash; confirm the current version before relying on any result, and take advice on group structures, which are where the exemption is most often lost.</p>
+    <!-- Contact details. -->
+    <p style="margin-top:10px">Should you have further enquiries or require our services &middot; Contact us at <a href="tel:+601112290453">011 1229 0453</a></p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Answer trail
+   ============================================================ */
+var trail = [];      // [{q, a}]
+var navStack = [];   // step ids, for the Back button
+
+function pushTrail(q, a){ trail.push({q:q, a:a}); renderTrail(); }
+
+function renderTrail(){
+  var ul = document.getElementById("trail");
+  var empty = document.getElementById("trailEmpty");
+  ul.innerHTML = "";
+  empty.style.display = trail.length ? "none" : "block";
+  trail.forEach(function(t){
+    var li = document.createElement("li");
+    var q = document.createElement("div"); q.className = "tl-q"; q.textContent = t.q;
+    var a = document.createElement("div"); a.className = "tl-a"; a.textContent = t.a;
+    li.appendChild(q); li.appendChild(a); ul.appendChild(li);
+  });
+}
+
+/* ============================================================
+   Rendering helpers
+   ============================================================ */
+var stage = document.getElementById("stage");
+
+function el(tag, cls, text){
+  var e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text !== undefined) e.textContent = text;
+  return e;
+}
+
+function question(cfg){
+  stage.innerHTML = "";
+  stage.appendChild(el("p", "eyebrow", cfg.eyebrow));
+  stage.appendChild(el("h2", "q", cfg.title));
+  if(cfg.sub) stage.appendChild(el("p", "qsub", cfg.sub));
+
+  var box = el("div", "opts");
+  cfg.options.forEach(function(o){
+    var b = el("button", "opt");
+    b.type = "button";
+    b.appendChild(el("b", null, o.label));
+    if(o.hint) b.appendChild(el("span", null, o.hint));
+    b.addEventListener("click", function(){
+      pushTrail(cfg.title, o.record || o.label);
+      go(o.next, o.data);
+    });
+    box.appendChild(b);
+  });
+  stage.appendChild(box);
+  if(cfg.footnote) stage.appendChild(el("p", "footnote", cfg.footnote));
+  addBack();
+}
+
+function addBack(){
+  if(navStack.length < 2) return;
+  var wrapRow = el("div", "actions");
+  var b = el("button", "btn-2", "\u2190 Back");
+  b.type = "button";
+  b.addEventListener("click", function(){
+    navStack.pop();                       // current
+    var prev = navStack.pop();            // the one to return to
+    trail.pop(); renderTrail();
+    go(prev);
+  });
+  wrapRow.appendChild(b);
+  stage.appendChild(wrapRow);
+}
+
+/* ============================================================
+   The three exemption tests (Section 1.6.10)
+   ============================================================ */
+var TESTS = [
+  {tag:"a)", text:"The business has a non-individual shareholder, or the equivalent, with annual turnover or revenue of at least RM3 million."},
+  {tag:"b)", text:"The business is a subsidiary of a holding company with annual turnover or revenue of at least RM3 million."},
+  {tag:"c)", text:"The business has a related company or a joint venture with annual turnover or revenue of at least RM3 million."}
+];
+
+function exemptionScreen(nextIfExempt, nextIfNot){
+  var answers = [null, null, null];
+  stage.innerHTML = "";
+  stage.appendChild(el("p", "eyebrow", "MSME EXEMPTION TEST"));
+  stage.appendChild(el("h2", "q", "Does any of these describe the business?"));
+  stage.appendChild(el("p", "qsub",
+    "Turnover below RM3 million is not enough on its own. Under Section 1.6.10, any one of the following removes the exemption."));
+
+  TESTS.forEach(function(t, i){
+    var card = el("div", "test");
+    var row = el("div", "tq");
+    row.appendChild(el("span", "tag", t.tag));
+    row.appendChild(el("span", "tx", t.text));
+    card.appendChild(row);
+
+    var yn = el("div", "yn");
+    ["Yes", "No"].forEach(function(v){
+      var b = el("button", null, v);
+      b.type = "button";
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function(){
+        answers[i] = (v === "Yes");
+        Array.prototype.forEach.call(yn.children, function(sib){
+          sib.setAttribute("aria-pressed", sib === b ? "true" : "false");
+        });
+        card.classList.add("answered");
+        submit.disabled = answers.indexOf(null) !== -1;
+      });
+      yn.appendChild(b);
+    });
+    card.appendChild(yn);
+    stage.appendChild(card);
+  });
+
+  stage.appendChild(el("p", "footnote",
+    "\u201cRelated company\u201d has the meaning assigned to it in section 2 of the Promotion of Investments Act 1986. If the group structure is not obvious, check the shareholder register and any joint venture agreements before answering."));
+
+  var submit = el("button", "cta", "Continue");
+  submit.type = "button";
+  submit.disabled = true;
+  submit.addEventListener("click", function(){
+    var failed = [];
+    answers.forEach(function(a, i){ if(a) failed.push(TESTS[i].tag.replace(")", "")); });
+    if(failed.length){
+      pushTrail("MSME exemption test", "Not exempt \u2014 fails limb " + failed.join(", "));
+      go(nextIfNot);
+    }else{
+      pushTrail("MSME exemption test", "All three answered No \u2014 exemption available");
+      go(nextIfExempt);
+    }
+  });
+  stage.appendChild(submit);
+  addBack();
+}
+
+/* ============================================================
+   Results
+   ============================================================ */
+function result(kind, label, value, sub, reasons){
+  stage.innerHTML = "";
+  stage.appendChild(el("p", "eyebrow", "DETERMINATION"));
+
+  var v = el("div", "verdict " + kind);
+  v.appendChild(el("p", "lab", label));
+  v.appendChild(el("p", "val", value));
+  if(sub) v.appendChild(el("p", "sub", sub));
+  stage.appendChild(v);
+
+  var b = el("div", "because");
+  b.appendChild(el("h3", null, "WHAT THIS MEANS"));
+  var ul = el("ul");
+  reasons.forEach(function(r){ ul.appendChild(el("li", null, r)); });
+  b.appendChild(ul);
+  stage.appendChild(b);
+
+  var row = el("div", "actions");
+  var again = el("button", "cta", "Start again");
+  again.type = "button";
+  again.style.marginTop = "0";
+  again.addEventListener("click", reset);
+  var print = el("button", "btn-2", "Print or save as PDF");
+  print.type = "button";
+  print.addEventListener("click", function(){ window.print(); });
+  row.appendChild(again); row.appendChild(print);
+  stage.appendChild(row);
+  addBack();
+}
+
+var MONITOR = "If turnover or revenue later reaches RM3 million, the obligation starts on 1 January of the second year following that year of assessment. Re-check this each year.";
+var STICKS  = "Once an implementation date has been determined, a later fall in turnover does not normally remove the obligation.";
+
+/* ============================================================
+   Steps
+   ============================================================ */
+var steps = {
+
+  start: function(){
+    question({
+      eyebrow:"STEP 1 OF 2 OR 3",
+      title:"When did the business commence operations?",
+      sub:"This fixes the reference year of assessment, which decides how the turnover test is applied.",
+      options:[
+        {label:"Before YA2023", hint:"Already trading \u2014 the reference year is YA2022", next:"bands", record:"Commenced before YA2023"},
+        {label:"During YA2023 to YA2025", hint:"No YA2022 figure exists, so the turnover bands do not apply", next:"rm3_2325", record:"Commenced during YA2023 \u2013 YA2025"},
+        {label:"In YA2026 or later", hint:"A new business", next:"new_exempt", record:"Commenced in YA2026 or later"}
+      ]
+    });
+  },
+
+  bands: function(){
+    question({
+      eyebrow:"TURNOVER BAND",
+      title:"What was the annual turnover or revenue for YA2022?",
+      sub:"Take this from the FY2022 audited financial statements, or from the YA2022 tax return where no audited financial statements were prepared.",
+      options:[
+        {label:"More than RM100 million", next:"r_aug2024"},
+        {label:"More than RM25 million and up to RM100 million", next:"r_jan2025"},
+        {label:"More than RM5 million and up to RM25 million", next:"r_jul2025"},
+        {label:"More than RM3 million and up to RM5 million", next:"r_jan2026"},
+        {label:"RM3 million or less", hint:"Continue to the MSME assessment", next:"rm3_2325"}
+      ]
+    });
+  },
+
+  rm3_2325: function(){
+    question({
+      eyebrow:"RM3 MILLION TEST",
+      title:"Did annual turnover or revenue reach RM3 million in YA2023, YA2024 or YA2025?",
+      sub:"Any one of the three years counts. If the threshold was crossed in any of them, the exemption is not available.",
+      options:[
+        {label:"Yes, in at least one of those years", next:"r_jul2026_reached", record:"Yes \u2014 reached RM3 million in YA2023, YA2024 or YA2025"},
+        {label:"No, below RM3 million in all three years", next:"exempt_existing", record:"No \u2014 below RM3 million in all three years"}
+      ]
+    });
+  },
+
+  exempt_existing: function(){ exemptionScreen("r_exempt_existing", "r_jul2026_concession"); },
+
+  new_exempt: function(){ exemptionScreen("new_first_ya", "r_jul2026_or_commencement"); },
+
+  new_first_ya: function(){
+    question({
+      eyebrow:"FIRST YEAR OF ASSESSMENT",
+      title:"In which year of assessment does annual turnover or revenue first reach RM3 million?",
+      sub:"Use the first year in which the threshold is expected to be crossed. If it is not expected to be crossed, choose the last option.",
+      options:[
+        {label:"YA2026", next:"r_second_year", data:2026},
+        {label:"YA2027", next:"r_second_year", data:2027},
+        {label:"YA2028", next:"r_second_year", data:2028},
+        {label:"Not expected to reach RM3 million", next:"r_exempt_new", record:"Not expected to reach RM3 million"}
+      ]
+    });
+  },
+
+  /* ---- results ---- */
+  r_aug2024: function(){
+    result("v-date", "IMPLEMENTATION DATE", "1 August 2024", "Phase 1 \u2014 this date has passed.", [
+      "This obligation is already live. The question is no longer timing but whether submissions, validations and rejections are being handled correctly.",
+      STICKS
+    ]);
+  },
+  r_jan2025: function(){
+    result("v-date", "IMPLEMENTATION DATE", "1 January 2025", "Phase 2 \u2014 this date has passed.", [
+      "This obligation is already live. Review whether consolidated e-Invoices are still being used where individual e-Invoices are now required.",
+      STICKS
+    ]);
+  },
+  r_jul2025: function(){
+    result("v-date", "IMPLEMENTATION DATE", "1 July 2025", "Phase 3 \u2014 this date has passed.", [
+      "This obligation is already live.",
+      STICKS
+    ]);
+  },
+  r_jan2026: function(){
+    result("v-date", "IMPLEMENTATION DATE", "1 January 2026", "Phase 4.", [
+      "The RM3 million exemption does not reach this band. Turnover above RM3 million in YA2022 puts the business inside the mandate regardless of the group structure.",
+      "Any single transaction of RM10,000 or more requires its own individual e-Invoice.",
+      STICKS
+    ]);
+  },
+  r_jul2026_reached: function(){
+    result("v-date", "IMPLEMENTATION DATE", "1 July 2026", "Concessionary implementation date.", [
+      "Because RM3 million was reached in YA2023, YA2024 or YA2025, the exemption is not available and the exemption criteria do not need to be tested.",
+      STICKS
+    ]);
+  },
+  r_jul2026_concession: function(){
+    result("v-stop", "IMPLEMENTATION DATE", "1 July 2026", "Concessionary implementation date \u2014 exemption lost on the group test.", [
+      "Turnover is below RM3 million, but the exemption is removed by the shareholder, holding company, related company or joint venture position under Section 1.6.10.",
+      "Document the group structure now. If LHDN reviews the position later, the turnover figure alone will not support it.",
+      STICKS
+    ]);
+  },
+  r_jul2026_or_commencement: function(){
+    result("v-stop", "IMPLEMENTATION DATE", "1 July 2026, or the date operations commence \u2014 whichever is later",
+      "Exemption not available on the group test.", [
+      "A business starting after 1 July 2026 issues e-Invoices from its first day of operations.",
+      "Because the exemption is lost on the group position rather than on turnover, the business's own size does not defer the date.",
+      STICKS
+    ]);
+  },
+  r_second_year: function(data){
+    var ya = data;
+    result("v-date", "IMPLEMENTATION DATE", "1 January " + (ya + 2),
+      "The second year following YA" + ya + ".", [
+      "The exemption applies until the RM3 million threshold is crossed, so there is a planning window between now and " + (ya + 2) + ".",
+      "\u201cSecond year following\u201d is not the next year. Turnover first reaching RM3 million in YA" + ya + " gives a start date of 1 January " + (ya + 2) + ".",
+      "Use the window for master data, TIN collection from customers and system readiness rather than leaving it to the final quarter."
+    ]);
+  },
+  r_exempt_existing: function(){
+    result("v-exempt", "OUTCOME", "Exempt from e-Invoice", "Including self-billed e-Invoice requirements.", [
+      "No e-Invoice is required for as long as the exemption holds. The business may still choose to issue e-Invoices voluntarily.",
+      MONITOR,
+      "Re-test the group position as well as turnover. Acquiring a corporate shareholder or entering a joint venture can remove the exemption without turnover changing at all."
+    ]);
+  },
+  r_exempt_new: function(){
+    result("v-exempt", "OUTCOME", "Exempt from e-Invoice", "Including self-billed e-Invoice requirements.", [
+      "No e-Invoice is required while turnover stays below RM3 million and the group tests are all answered No.",
+      MONITOR,
+      "Keep evidence of both the turnover computation and the shareholder, holding company, related company and joint venture position for each year."
+    ]);
+  }
+};
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+function go(id, data){
+  navStack.push(id);
+  steps[id](data);
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function reset(){
+  trail = []; navStack = [];
+  renderTrail();
+  go("start");
+}
+
+try{
+  reset();
+}catch(err){
+  document.getElementById("stage").innerHTML =
+    '<p class="q">Something went wrong</p>' +
+    '<p class="qsub">The tool could not start. Please reload the page, and report the ' +
+    'problem if it persists.</p>';
+  throw err;
+}
+</script>
+</body>
+</html>
