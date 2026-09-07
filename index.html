@@ -78,6 +78,18 @@ a{color:var(--brand)}
 .yn button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:#fff}
 .footnote{margin-top:16px; color:var(--ink-3); font-size:14.5px}
 
+.helpbox{margin-top:28px; background:var(--brand-soft); border:1.5px solid #BBD0E6;
+  border-radius:10px; padding:22px 24px}
+.helpbox h3{margin:0 0 6px; font-size:19px; font-weight:700; color:var(--ink)}
+.helpbox .hb-sub{margin:0; font-size:15.5px; color:var(--ink-2); line-height:1.5}
+.contacts{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:18px}
+@media (max-width:620px){ .contacts{grid-template-columns:1fr} }
+.contact{display:block; text-decoration:none; background:var(--paper);
+  border:1.5px solid #BBD0E6; border-radius:9px; padding:13px 16px; transition:border-color .12s, background .12s}
+.contact:hover{border-color:var(--brand); background:#F7FAFD}
+.contact:focus-visible{outline:3px solid #9CC0E4; outline-offset:2px}
+.c-lab{display:block; font-size:13.5px; font-weight:700; letter-spacing:.03em; color:var(--brand)}
+.c-val{display:block; font-size:18px; font-weight:600; color:var(--ink); margin-top:3px; word-break:break-word}
 .cta{
   margin-top:20px; font:inherit; font-weight:600; font-size:17px; cursor:pointer;
   background:var(--brand); color:#fff; border:none; border-radius:8px; padding:12px 26px;
@@ -132,18 +144,6 @@ a{color:var(--brand)}
 .foot strong{color:var(--ink-2)}
 
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
-
-@media print{
-  body{background:#fff; font-size:12pt}
-  .masthead{background:#fff; color:#000; border-bottom:2px solid #000; padding:0 0 12px}
-  .masthead p{color:#333} .ver{border-color:#999; color:#333}
-  .wrap{display:block; padding:16px 0; max-width:none}
-  .card{box-shadow:none; border:none} .card .body{padding:0}
-  .actions,.opts,.cta,.yn{display:none !important}
-  .rail{margin-top:24px; page-break-inside:avoid}
-  .foot .inner{padding:16px 0}
-  @page{margin:14mm}
-}
 </style>
 </head>
 <body>
@@ -181,7 +181,7 @@ a{color:var(--brand)}
   <div class="inner">
     <p><strong>This tool is general guidance, not tax advice.</strong> It follows the latest LHDN e-Invoice Guideline and the accompanying FAQ. LHDN revises the guideline frequently &mdash; confirm the current version before relying on any result, and take advice on group structures, which are where the exemption is most often lost.</p>
     <!-- Contact details. -->
-    <p style="margin-top:10px">Should you have further enquiries or require our services &middot; Contact us at <a href="tel:+601112290453">011 1229 0453</a></p>
+    <p style="margin-top:10px">Should you have further enquiries or require our services &middot; Call <a href="tel:+601112290453">011 1229 0453</a> or email <a href="mailto:einvoice@wanconnect.com.my">einvoice@wanconnect.com.my</a></p>
   </div>
 </footer>
 
@@ -323,6 +323,30 @@ function exemptionScreen(nextIfExempt, nextIfNot){
   addBack();
 }
 
+function contactBlock(){
+  var w = el("div", "helpbox");
+  w.appendChild(el("h3", null, "Need help getting ready?"));
+  w.appendChild(el("p", "hb-sub",
+    "If you would like our pre-audit e-Invoice service \u2014 readiness review, system setup and MyInvois submission \u2014 get in touch."));
+
+  var row = el("div", "contacts");
+
+  var a1 = document.createElement("a");
+  a1.className = "contact"; a1.href = "tel:+601112290453";
+  a1.appendChild(el("span", "c-lab", "Call us"));
+  a1.appendChild(el("span", "c-val", "011 1229 0453"));
+  row.appendChild(a1);
+
+  var a2 = document.createElement("a");
+  a2.className = "contact"; a2.href = "mailto:einvoice@wanconnect.com.my";
+  a2.appendChild(el("span", "c-lab", "Email us"));
+  a2.appendChild(el("span", "c-val", "einvoice@wanconnect.com.my"));
+  row.appendChild(a2);
+
+  w.appendChild(row);
+  return w;
+}
+
 /* ============================================================
    Results
    ============================================================ */
@@ -343,15 +367,14 @@ function result(kind, label, value, sub, reasons){
   b.appendChild(ul);
   stage.appendChild(b);
 
+  stage.appendChild(contactBlock());
+
   var row = el("div", "actions");
   var again = el("button", "cta", "Start again");
   again.type = "button";
   again.style.marginTop = "0";
   again.addEventListener("click", reset);
-  var print = el("button", "btn-2", "Print or save as PDF");
-  print.type = "button";
-  print.addEventListener("click", function(){ window.print(); });
-  row.appendChild(again); row.appendChild(print);
+  row.appendChild(again);
   stage.appendChild(row);
   addBack();
 }
@@ -366,7 +389,7 @@ var steps = {
 
   start: function(){
     question({
-      eyebrow:"STEP 1 OF 2 OR 3",
+      eyebrow:"COMMENCEMENT",
       title:"When did the business commence operations?",
       sub:"This fixes the reference year of assessment, which decides how the turnover test is applied.",
       options:[
@@ -404,9 +427,23 @@ var steps = {
     });
   },
 
-  exempt_existing: function(){ exemptionScreen("r_exempt_existing", "r_jul2026_concession"); },
+  exempt_existing: function(){ exemptionScreen("first_ya_existing", "r_jul2026_concession"); },
 
   new_exempt: function(){ exemptionScreen("new_first_ya", "r_jul2026_or_commencement"); },
+
+  first_ya_existing: function(){
+    question({
+      eyebrow:"THRESHOLD YEAR",
+      title:"In which year of assessment does annual turnover or revenue first reach RM3 million?",
+      sub:"The exemption holds only until the threshold is crossed. YA2026 is the current year, so this is a live question rather than a hypothetical one \u2014 use your latest forecast if the year is not closed.",
+      options:[
+        {label:"YA2026", hint:"The current year of assessment", next:"r_second_year", data:2026},
+        {label:"YA2027", next:"r_second_year", data:2027},
+        {label:"YA2028", next:"r_second_year", data:2028},
+        {label:"Not expected to reach RM3 million", hint:"The exemption continues", next:"r_exempt_existing", record:"Not expected to reach RM3 million"}
+      ]
+    });
+  },
 
   new_first_ya: function(){
     question({
@@ -473,7 +510,7 @@ var steps = {
     var ya = data;
     result("v-date", "IMPLEMENTATION DATE", "1 January " + (ya + 2),
       "The second year following YA" + ya + ".", [
-      "The exemption applies until the RM3 million threshold is crossed, so there is a planning window between now and " + (ya + 2) + ".",
+      "The exemption holds until the RM3 million threshold is crossed, so there is a planning window between now and " + (ya + 2) + ".",
       "\u201cSecond year following\u201d is not the next year. Turnover first reaching RM3 million in YA" + ya + " gives a start date of 1 January " + (ya + 2) + ".",
       "Use the window for master data, TIN collection from customers and system readiness rather than leaving it to the final quarter."
     ]);
